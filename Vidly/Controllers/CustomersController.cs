@@ -5,55 +5,81 @@ using System.Web;
 using System.Web.Mvc;
 using Vidly.Models;
 using Vidly.ViewModels;
+using System.Data.Entity;
 
 namespace Vidly.Controllers
 {
     public class CustomersController : Controller
     {
+        private ApplicationDbContext _context;
 
-        // GET: Customers
+        public CustomersController()
+        {
+            _context = new ApplicationDbContext();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _context.Dispose();
+        }
+
         public ActionResult Index()
         {
-            var customers = new List<Customer>
-            {
-                new Customer {Id = 1, Name = "Customer 1" },
-                new Customer {Id = 2, Name = "Customer 2" }
-            };
+            var customers = _context.Customers.Include(c => c.MembershipType).ToList();
 
-            var viewmodel = new AllCustomersViewModel
-            {
-                Customers = customers
-            };
-
-            return View(viewmodel);
+            return View(customers);
         }
 
 
         public ActionResult Details(int Id)
         {
-            var customers = new List<Customer>
+            var customer = _context.Customers.Include(c => c.MembershipType).SingleOrDefault(c => c.Id == Id);
+            if (customer == null)
+                return HttpNotFound();
+            return View(customer);
+
+        }
+
+        public ActionResult New()
+        {
+            var membershipTypes = _context.MembershipTypes.ToList();
+            var viewModel = new CustomerFormViewModel
             {
-                new Customer {Id = 1, Name = "Customer 1" },
-                new Customer {Id = 2, Name = "Customer 2" }
+                MembershipTypes = membershipTypes
             };
-            bool isinlist = false;
-            string name = "";
-            foreach (var customer in customers)
-            {
-                if(customer.Id == Id)
-                {
-                    isinlist = true;
-                    name = customer.Name;
-                }
-            }
-            if (isinlist == true)
-            {
-                return Content(name);
-            }
+            return View("CustomerForm",viewModel);
+        }
+
+        [HttpPost]
+        public ActionResult Save(Customer customer)
+        {
+            if (customer.Id == 0)
+            _context.Customers.Add(customer);
             else
             {
-                return HttpNotFound();
+                var customerInDb = _context.Customers.Single(c => c.Id == customer.Id);
+
+                customerInDb.Name = customer.Name;
+                customerInDb.BirthdayDate = customer.BirthdayDate;
+                customerInDb.MembershipTypeId = customer.MembershipTypeId;
+                customerInDb.IsSubscribeToNewslater = customer.IsSubscribeToNewslater;
             }
+            _context.SaveChanges();
+            return RedirectToAction("Index","Customers");
+        }
+
+        public ActionResult Edit(int Id)
+        {
+            var customer = _context.Customers.SingleOrDefault(c => c.Id == Id);
+            if (customer == null)
+                return HttpNotFound();
+
+            var viewModel = new CustomerFormViewModel
+            {
+                Customer = customer,
+                MembershipTypes = _context.MembershipTypes.ToList()
+            };
+            return View("CustomerForm", viewModel);
         }
     }
 }

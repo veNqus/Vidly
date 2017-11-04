@@ -5,7 +5,10 @@
 }
 
 <h2>All Movies</h2>
-
+@using (Html.BeginForm("New", "Movies"))
+{
+<button type="submit" class="btn btn-primary">New Movie</button>
+}
 <table class="table	table-­‐bordered table-­‐hover">
     <tr>
         <th>Movie</th>
@@ -14,9 +17,9 @@
         @foreach (var Movie in Model)
         {
         <tr>
-            <td>@Html.ActionLink(@Movie.Name, "Details", "Movies", new { Id = Movie.Id }, null)</td>
+            <td>@Html.ActionLink(@Movie.Name, "Edit", "Movies", new { Id = Movie.Id }, null)</td>
             <td>@Movie.Genre.Name</td>
         </tr>
-        }
+            }
 </table>
 
